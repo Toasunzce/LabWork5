@@ -1,1 +1,0 @@
-time,t_ms,conn,client_id,req_id,cmd,key,status,detail,bytes_in,bytes_out,proc_us,total_us,entries,active_conns

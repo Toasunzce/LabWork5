@@ -1,3 +1,13 @@
+// server.cpp: TCP key-value store server (lab 5, variant 20)
+// One thread per client; the shared table is protected by a mutex.
+// With --csv every request is written as one CSV row (when, who, command, result, sizes, timings).
+//
+// Protocol: [Length: 4 bytes, network order][Payload: Length bytes, text]
+//   request : "<ver> <reqId> <clientId> <CMD> [args]"   CMD: PUT key value | GET key | DELETE key | LIST | COUNT
+//   response: "<ver> <reqId> <status> [data]"           status: OK, NOT_FOUND, FULL, BAD_REQUEST,
+//                                                                BAD_VERSION, UNKNOWN_CMD, BAD_LENGTH
+// Usage: server.exe [--host 127.0.0.1] [--port 20082] [--timeout-ms 30000]
+//                   [--csv requests.csv] [--verbose 1]
 #define NOMINMAX
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -254,11 +264,10 @@ static void CsvRow(int conn, const Reply& r, double tRecv, long long procUs, lon
         std::to_string(procUs) + "," + std::to_string(totalUs) + "," + std::to_string(r.entries) + "," +
         std::to_string(g_active.load());
 
-    static int rows = 0;
     std::lock_guard<std::mutex> lock(g_csvMx);
     if (!g_csv) return;
     fprintf(g_csv, "%s\n", row.c_str());
-    if (++rows % 64 == 0) fflush(g_csv);
+    fflush(g_csv);                      // every row reaches the file at once: nothing is lost if the process is killed
 }
 
 
