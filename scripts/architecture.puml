@@ -1,0 +1,23 @@
+@startuml
+skinparam shadowing false
+
+rectangle "client.exe" as CL {
+  rectangle "main\n(запуск K клиентов\nв цикле, итоги, CSV)" as MAIN
+  rectangle "Worker 1..K\n(поток + TCP-соединение,\nпроверка ответов)" as WK
+}
+
+rectangle "server.exe" as SV {
+  rectangle "Главный поток\n(select + accept)" as ACC
+  rectangle "ClientThread 1..K\n(поток на соединение)" as CT
+  rectangle "Таблица\nstd::map, до 1000 записей\n(защищена mutex)" as TBL
+  rectangle "Журнал\n(консоль)" as LOG
+}
+
+MAIN --> WK : создаёт K потоков
+WK --> ACC : connect (TCP, 127.0.0.1:20082)
+ACC --> CT : новый поток на клиента
+WK --> CT : [Length][запрос]\nPUT / GET / DELETE / LIST / COUNT
+CT --> WK : [Length][ответ]\nOK / NOT_FOUND / FULL / ошибка
+CT --> TBL : операция под mutex
+CT --> LOG : запись о запросе
+@enduml

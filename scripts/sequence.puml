@@ -1,0 +1,35 @@
+@startuml
+skinparam shadowing false
+
+participant "Клиент" as C
+participant "Сервер" as S
+participant "Поток клиента" as T
+database "Таблица" as TBL
+
+== Подключение ==
+S -> S : socket, bind, listen
+C -> S : connect
+S -> T : создать поток для клиента
+
+== Запросы ==
+C -> T : PUT k v
+T -> TBL : записать (под mutex)
+T --> C : OK NEW
+
+C -> T : PUT k v2
+T -> TBL : обновить (под mutex)
+T --> C : OK UPDATED
+
+C -> T : GET missing
+T -> TBL : поиск
+T --> C : NOT_FOUND
+
+== Ошибка ==
+C -> T : FOO
+T --> C : UNKNOWN_CMD
+
+== Завершение ==
+C -> T : закрыть соединение
+T -> T : closesocket
+S -> S : Ctrl+C: closesocket, WSACleanup
+@enduml
